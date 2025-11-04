@@ -42,7 +42,7 @@ audionet:
         norm_type: cLNhw
         act_type: PReLU
         upsampling_depth: 2
-        repeats: 6
+        repeats: 12
         shared: true
         is2d: true
         layers:
@@ -91,7 +91,7 @@ audionet:
             
 
       fusion_params:
-        fusion_type: ATTNFusion
+        fusion_type: SAFFusion
         fusion_shared: true
         kernel_size: 4
         is2d: true
@@ -120,7 +120,7 @@ loss:
 # Training config
 training:
   system: AudioVisualLightningModule
-  gpus: [0, 1, 2, 3]
+  gpus: [0, 1, 2, 3, 4, 5, 6, 7]
   parallel: ddp
   epochs: 500
   early_stop:
@@ -146,18 +146,18 @@ scheduler:
 datamodule:
   data_name: AVSpeechDataModule
   data_config:
-    train_dir: DataPreProcess/LRS2/tr
-    valid_dir: DataPreProcess/LRS2/cv
-    test_dir: DataPreProcess/LRS2/tt
+    train_dir: DataPreProcess/Vox2/tr
+    valid_dir: DataPreProcess/Vox2/cv
+    test_dir: DataPreProcess/Vox2/tt
     n_src: 1
     sample_rate: 16000
     segment: 2.0
     normalize_audio: false
-    batch_size: 4
+    batch_size: 3
     num_workers: 8
     pin_memory: true
     persistent_workers: false
 
     
 exp:
-  exp_name: LRS2_SwiftNet_6
+  exp_name: Vox2_SwiftNet_12

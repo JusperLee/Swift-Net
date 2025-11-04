@@ -146,9 +146,9 @@ scheduler:
 datamodule:
   data_name: AVSpeechDataModule
   data_config:
-    train_dir: DataPreProcess/LRS2/tr
-    valid_dir: DataPreProcess/LRS2/cv
-    test_dir: DataPreProcess/LRS2/tt
+    train_dir: /home/data2/DataPreProcess/LRS2/tr
+    valid_dir: /home/data2/DataPreProcess/LRS2/cv
+    test_dir: /home/data2/DataPreProcess/LRS2/tt
     n_src: 1
     sample_rate: 16000
     segment: 2.0

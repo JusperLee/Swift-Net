@@ -658,7 +658,7 @@ class GlobalAttention(nn.Module):
         x = self.FFN(x)
         return x
 
-class AudioBlock(nn.Module):
+class FTGS(nn.Module):
     def __init__(
         self,
         in_chan: int,
@@ -672,7 +672,7 @@ class AudioBlock(nn.Module):
         is2d: bool = False,
         causal: bool = False,
     ):
-        super(AudioBlock, self).__init__()
+        super(FTGS, self).__init__()
         self.in_chan = in_chan
         self.hid_chan = hid_chan
         self.kernel_size = kernel_size
@@ -800,7 +800,7 @@ class AudioBlock(nn.Module):
 
         return out
     
-class VideoBlock(nn.Module):
+class LightVid(nn.Module):
     def __init__(
         self,
         in_chan: int,
@@ -814,7 +814,7 @@ class VideoBlock(nn.Module):
         is2d: bool = False,
         causal: bool = False,  
     ):
-        super(VideoBlock, self).__init__()
+        super(LightVid, self).__init__()
         self.in_chan = in_chan
         self.hid_chan = hid_chan
         self.kernel_size = kernel_size
@@ -904,7 +904,7 @@ class FusionBasemodule(nn.Module):
 
         return audio, video
 
-class ATTNFusionCell(nn.Module):
+class SAF(nn.Module):
     def __init__(
         self,
         in_chan_a: int,
@@ -912,7 +912,7 @@ class ATTNFusionCell(nn.Module):
         kernel_size: int = 1,
         is2d: bool = False
     ):
-        super(ATTNFusionCell, self).__init__()
+        super(SAF, self).__init__()
         self.in_chan_a = in_chan_a
         self.in_chan_b = in_chan_b
         self.kernel_size = kernel_size
@@ -936,7 +936,7 @@ class ATTNFusionCell(nn.Module):
         output = tensor_a * gamma + beta  #  [B, C, T, F]
         return output
 
-class ATTNFusion(FusionBasemodule):
+class SAFFusion(FusionBasemodule):
     def __init__(
         self,
         ain_chan: int,
@@ -945,10 +945,10 @@ class ATTNFusion(FusionBasemodule):
         video_fusion: bool = True,
         is2d=True,
     ):
-        super(ATTNFusion, self).__init__(ain_chan, vin_chan, kernel_size, video_fusion, is2d)
+        super(SAFFusion, self).__init__(ain_chan, vin_chan, kernel_size, video_fusion, is2d)
         if video_fusion:
-            self.video_lstm = ATTNFusionCell(self.vin_chan, self.ain_chan, self.kernel_size, self.is2d)
-        self.audio_lstm = ATTNFusionCell(self.ain_chan, self.vin_chan, self.kernel_size, self.is2d)
+            self.video_lstm = SAF(self.vin_chan, self.ain_chan, self.kernel_size, self.is2d)
+        self.audio_lstm = SAF(self.ain_chan, self.vin_chan, self.kernel_size, self.is2d)
 
     def forward(self, audio: torch.Tensor, video: torch.Tensor):
         if self.video_fusion:
@@ -981,7 +981,7 @@ class MultiModalFusion(nn.Module):
         self.fusion_shared = fusion_shared
         self.is2d = is2d
         
-        fusion_class = ATTNFusion if self.fusion_repeats > 0 else nn.Identity
+        fusion_class = SAFFusion if self.fusion_repeats > 0 else nn.Identity
         if self.fusion_shared:
             self.fusion_module = fusion_class(
                 ain_chan=self.audio_bn_chan,
@@ -1051,29 +1051,27 @@ class Separator(nn.Module):
         
         # Video net and audio net
         if self.audio_shared:
-            self.audio_net = AudioBlock(
+            self.audio_net = FTGS(
                 **self.audio_params,
                 in_chan=self.audio_bn_chan
             )
         else:
-            self.audio_net = nn.ModuleList([AudioBlock(
+            self.audio_net = nn.ModuleList([FTGS(
                 **self.audio_params,
                 in_chan=self.audio_bn_chan
             ) for _ in range(self.fusion_repeats + self.audio_repeats)])
             
         if self.video_shared:
-            self.video_net = VideoBlock(
+            self.video_net = LightVid(
                 **self.video_params,
                 in_chan=self.video_bn_chan
             )
         else:
-            self.video_net = nn.ModuleList([VideoBlock(
+            self.video_net = nn.ModuleList([LightVid(
                 **self.video_params,
                 in_chan=self.video_bn_chan
             ) for _ in range(self.video_repeat)])
             
-        # CAF
-        # print(self.audio_bn_chan)
         self.caf = MultiModalFusion(
             **self.fusion_params, 
             audio_bn_chan=self.audio_bn_chan, 
@@ -1089,7 +1087,7 @@ class Separator(nn.Module):
         """
         audio_residual = audio
         video_residual = video
-        # CAF
+        
         for i in range(self.fusion_repeats):
             if self.audio_shared:
                 audio = self.audio_net(audio + audio_residual if i > 0 else audio)

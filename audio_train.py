@@ -19,8 +19,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, RichProgressBar
 from pytorch_lightning.callbacks.progress.rich_progress import *
 from rich.console import Console
-from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.loggers.wandb import WandbLogger
+from swanlab.integration.pytorch_lightning import SwanLabLogger
 from pytorch_lightning.strategies.ddp import DDPStrategy
 from rich import print, reconfigure
 from collections.abc import MutableMapping
@@ -139,7 +138,7 @@ def main(config):
     # default logger used by trainer
     logger_dir = os.path.join(os.getcwd(), "Experiments", "tensorboard_logs")
     os.makedirs(os.path.join(logger_dir, config["exp"]["exp_name"]), exist_ok=True)
-    comet_logger = WandbLogger(
+    comet_logger = SwanLabLogger(
             name=config["exp"]["exp_name"], 
             save_dir=os.path.join(logger_dir, config["exp"]["exp_name"]), 
             project="RTFSNet",
